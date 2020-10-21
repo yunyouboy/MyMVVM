@@ -49,7 +49,7 @@ public class TecentNetworkApi extends NetworkApi {
         return new Function<T, T>() {
             @Override
             public T apply(T response) throws Exception {
-                //response中code码不会0 出现错误
+                //response中code码不为0 出现错误
                 if (response instanceof TecentBaseResponse && ((TecentBaseResponse) response).showapiResCode != 0) {
                     ExceptionHandle.ServerException exception = new ExceptionHandle.ServerException();
                     exception.code = ((TecentBaseResponse) response).showapiResCode;
@@ -64,6 +64,7 @@ public class TecentNetworkApi extends NetworkApi {
     @Override
     public String getFormal() {
         return "http://service-o5ikp40z-1255468759.ap-shanghai.apigateway.myqcloud.com/";
+        //return "http://service-jkbcwr2k-1303970573.nj.apigw.tencentcs.com/";
     }
 
     @Override

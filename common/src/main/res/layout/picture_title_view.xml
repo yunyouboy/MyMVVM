@@ -3,9 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
+
         <import type="android.view.View" />
+
         <import type="android.text.TextUtils" />
+
         <import type="androidx.databinding.ObservableField" />
+
+        <variable
+            name="viewModel"
+            type="com.xiangxue.common.views.picturetitleview.PictureTitleViewModel" />
     </data>
 
     <LinearLayout xmlns:tools="http://schemas.android.com/tools"
@@ -25,17 +32,17 @@
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
                 card_view:cardBackgroundColor="@android:color/transparent"
                 card_view:cardCornerRadius="5dp"
-                android:layout_marginRight="10dp"
                 card_view:cardElevation="0dp"
                 card_view:contentPadding="0dp">
 
                 <ImageView
-                    android:id="@+id/item_image"
                     android:layout_width="100dp"
                     android:layout_height="70dp"
-                    android:scaleType="fitXY" />
+                    android:scaleType="fitXY"
+                    app:loadImageUrl="@{viewModel.pictureUrl}" />
             </androidx.cardview.widget.CardView>
 
             <TextView
@@ -46,6 +53,7 @@
                 android:ellipsize="end"
                 android:gravity="center_vertical"
                 android:maxLines="2"
+                android:text="@{viewModel.title}"
                 android:textColor="#303030"
                 android:textSize="16sp"
                 android:textStyle="bold"

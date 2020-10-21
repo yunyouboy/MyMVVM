@@ -1,33 +1,30 @@
 package com.xiangxue.news.homefragment.headlinenews;
 
 import android.os.Bundle;
-import android.os.Looper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.tabs.TabLayout;
-import com.google.gson.Gson;
-import com.xiangxue.network.TecentNetworkApi;
-import com.xiangxue.network.observer.BaseObserver;
+import com.xiangxue.base.mvvm.model.BaseMvvmModel;
+import com.xiangxue.base.mvvm.model.IBaseModelListener;
+import com.xiangxue.base.mvvm.model.PagingResult;
 import com.xiangxue.news.R;
 import com.xiangxue.news.databinding.FragmentHomeBinding;
-import com.xiangxue.news.homefragment.api.NewsApiInterface;
 import com.xiangxue.news.homefragment.api.NewsChannelsBean;
 
-import java.util.ArrayList;
+import java.util.List;
 
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.schedulers.Schedulers;
-
-public class HeadlineNewsFragment extends Fragment {
+public class HeadlineNewsFragment extends Fragment implements IBaseModelListener<List<NewsChannelsBean.ChannelList>> {
     public HeadlineNewsFragmentAdapter adapter;
     FragmentHomeBinding viewDataBinding;
+    private NewsChannelModel mNewsChannelModel;
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         viewDataBinding = DataBindingUtil.inflate(inflater, R.layout.fragment_home, container, false);
@@ -36,31 +33,21 @@ public class HeadlineNewsFragment extends Fragment {
         viewDataBinding.viewpager.setAdapter(adapter);
         viewDataBinding.tablayout.setupWithViewPager(viewDataBinding.viewpager);
         viewDataBinding.viewpager.setOffscreenPageLimit(1);
-        load();
+        mNewsChannelModel = new NewsChannelModel();
+        mNewsChannelModel.register(this);
+        mNewsChannelModel.load();
         return viewDataBinding.getRoot();
     }
 
-    protected void load() {
-        TecentNetworkApi.getService(NewsApiInterface.class)
-                .getNewsChannels()
-                .compose(TecentNetworkApi.getInstance().applySchedulers(new BaseObserver<NewsChannelsBean>() {
-                    @Override
-                    public void onSuccess(NewsChannelsBean newsChannelsBean) {
-                        Log.e("MainActivity", new Gson().toJson(newsChannelsBean));
-                        ArrayList<HeadlineNewsFragmentAdapter.Channel> channels = new ArrayList<>();
-                        for (NewsChannelsBean.ChannelList source : newsChannelsBean.showapiResBody.channelList) {
-                            HeadlineNewsFragmentAdapter.Channel channel = new HeadlineNewsFragmentAdapter.Channel();
-                            channel.channelId = source.channelId;
-                            channel.channelName = source.name;
-                            channels.add(channel);
-                        }
-                        adapter.setChannels(channels);
-                    }
+    @Override
+    public void onLoadSuccess(BaseMvvmModel model, List<NewsChannelsBean.ChannelList> channelLists, PagingResult... result) {
+        if (null != adapter) {
+            adapter.setChannels(channelLists);
+        }
+    }
 
-                    @Override
-                    public void onFailure(Throwable e) {
-                        e.printStackTrace();
-                    }
-                }));
+    @Override
+    public void onLoadFail(BaseMvvmModel model, String message, PagingResult... result) {
+        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
     }
 }
