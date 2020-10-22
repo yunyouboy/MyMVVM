@@ -1,34 +1,46 @@
 package com.xiangxue.base.mvvm.model;
 
+import android.text.TextUtils;
+import android.util.Log;
+
 import com.google.gson.Gson;
 import com.xiangxue.base.preference.BasicDataPreferenceUtil;
+import com.xiangxue.base.utils.GenericUtils;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
 import java.util.List;
+
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 
 /**
  * Author:qyg
  * DATE:2020/10/21 15:38
  * Description：
  **/
-public abstract class BaseMvvmModel<NETWORK_DATA, RESULT_DATA> {
+public abstract class BaseMvvmModel<NETWORK_DATA, RESULT_DATA> implements MvvmDataObserver<NETWORK_DATA> {
     protected WeakReference<IBaseModelListener> mReferenceIBaseModelListener;
-
     protected int mPage = 1;
     private boolean mIsPaging;//是否分页
     private final int INIT_PAGE_NUMBER;
     private boolean mIsLoading;//是否正在请求网络
 
     private String mCachedPreferenceKey;
+    private String mApkPredefinedData;
+    private CompositeDisposable compositeDisposable;
 
-    public BaseMvvmModel(boolean isPaging, String cachedPreferenceKey, int... initPageNumber) {
-        mIsPaging = isPaging;
+    public BaseMvvmModel(boolean isPaging, String cachedPreferenceKey, String apkPredefinedData, int... initPageNumber) {
+        this.mIsPaging = isPaging;
         if (isPaging && initPageNumber != null && initPageNumber.length > 0) {
             INIT_PAGE_NUMBER = initPageNumber[0];
         } else {
             INIT_PAGE_NUMBER = -1;
         }
-        mCachedPreferenceKey = cachedPreferenceKey;
+        this.mCachedPreferenceKey = cachedPreferenceKey;
+        this.mApkPredefinedData = apkPredefinedData;
     }
 
     public void register(IBaseModelListener listener) {
@@ -56,9 +68,46 @@ public abstract class BaseMvvmModel<NETWORK_DATA, RESULT_DATA> {
         }
     }
 
+    protected boolean isNeedToUpdate(long cachedTimeSlot) {
+        return true;
+    }
+
+    public void getCachedDataAndLoad(){
+        if(!mIsLoading) {
+            mIsLoading = true;
+            if(mCachedPreferenceKey != null){
+                String saveDataString = BasicDataPreferenceUtil.getInstance().getString(mCachedPreferenceKey);
+                if(!TextUtils.isEmpty(saveDataString)) {
+                    try {
+                        NETWORK_DATA savedData = new Gson().fromJson(new JSONObject(saveDataString).getString("data"), (Class<NETWORK_DATA>) GenericUtils.getGenericType(this));
+                        if(savedData != null) {
+                            onSuccess(savedData, true);
+                        }
+                        long timeSlot = Long.parseLong(new JSONObject(saveDataString).getString("updateTimeInMillis"));
+                        if(isNeedToUpdate(timeSlot)) {
+                            load();
+                            return;
+                        }
+                    } catch (JSONException e) {
+                        Log.e("BaseMvvmModel",e.getMessage());
+                        //e.printStackTrace();
+                    }
+                }
+
+                if(mApkPredefinedData != null) {
+                    NETWORK_DATA savedData = new Gson().fromJson(mApkPredefinedData, (Class<NETWORK_DATA>) GenericUtils.getGenericType(this));
+                    if(savedData != null) {
+                        onSuccess(savedData, true);
+                    }
+                }
+            }
+            load();
+        }
+    }
+
     protected abstract void load();
 
-    protected void notifyResultToListener(NETWORK_DATA networkData,RESULT_DATA resultData) {
+    protected void notifyResultToListener(NETWORK_DATA networkData, RESULT_DATA resultData, boolean isFromCache) {
         IBaseModelListener listener = mReferenceIBaseModelListener.get();
         if (listener != null) {
             // notify
@@ -70,23 +119,25 @@ public abstract class BaseMvvmModel<NETWORK_DATA, RESULT_DATA> {
 
             // save resultData to preference
             if(mIsPaging) {
-                if(mCachedPreferenceKey != null && mPage == INIT_PAGE_NUMBER){
+                if(mCachedPreferenceKey != null && mPage == INIT_PAGE_NUMBER && !isFromCache){
                     saveDataToPreference(networkData);
                 }
             } else {
-                if(mCachedPreferenceKey != null){
+                if(mCachedPreferenceKey != null && !isFromCache){
                     saveDataToPreference(networkData);
                 }
             }
 
             // update page number
-            if (mIsPaging) {
+            if (mIsPaging && !isFromCache) {
                 if (resultData != null && ((List) resultData).size() > 0) {
                     mPage++;
                 }
             }
         }
-        mIsLoading = false;
+        if(!isFromCache) {
+            mIsLoading = false;
+        }
     }
 
     protected void loadFail(final String errorMessage) {
@@ -108,5 +159,24 @@ public abstract class BaseMvvmModel<NETWORK_DATA, RESULT_DATA> {
             cachedData.updateTimeInMillis = System.currentTimeMillis();
             BasicDataPreferenceUtil.getInstance().setString(mCachedPreferenceKey, new Gson().toJson(cachedData));
         }
+    }
+
+    public void cancel() {
+        if (compositeDisposable != null && !compositeDisposable.isDisposed()) {
+            compositeDisposable.dispose();
+        }
+    }
+
+
+    public void addDisposable(Disposable d) {
+        if (d == null) {
+            return;
+        }
+
+        if (compositeDisposable == null) {
+            compositeDisposable = new CompositeDisposable();
+        }
+
+        compositeDisposable.add(d);
     }
 }
