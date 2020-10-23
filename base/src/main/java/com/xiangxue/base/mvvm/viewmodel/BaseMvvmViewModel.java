@@ -105,8 +105,8 @@ public abstract class BaseMvvmViewModel<MODEL extends BaseMvvmModel, DATA> exten
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     private void onResume() {
-        Log.e("qyg","onResume");
-        if(dataList == null || dataList.getValue() == null || dataList.getValue().size() == 0) {
+        Log.e("qyg", "onResume");
+        if (dataList == null || dataList.getValue() == null || dataList.getValue().size() == 0) {
             createAndRegisterModel();
             model.getCachedDataAndLoad();
         } else {

@@ -1,43 +1,52 @@
 package com.xiangxue.news.homefragment.headlinenews;
 
-import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-
-import androidx.annotation.NonNull;
-import androidx.databinding.DataBindingUtil;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 
 import com.google.android.material.tabs.TabLayout;
+import com.xiangxue.base.mvvm.view.BaseMvvmFragment;
 import com.xiangxue.news.R;
 import com.xiangxue.news.databinding.FragmentHomeBinding;
 import com.xiangxue.news.homefragment.api.NewsChannelsBean;
 
 import java.util.List;
 
-public class HeadlineNewsFragment extends Fragment {
+public class HeadlineNewsFragment extends BaseMvvmFragment<FragmentHomeBinding, HeadlineNewsViewModel, NewsChannelsBean.ChannelList> {
     public HeadlineNewsFragmentAdapter adapter;
-    FragmentHomeBinding viewDataBinding;
-    private HeadlineNewsViewModel mHeadlineNewsViewModel;
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        viewDataBinding = DataBindingUtil.inflate(inflater, R.layout.fragment_home, container, false);
+    protected String getFragmentTag() {
+        return "HeadlineNewsFragment";
+    }
+
+    @Override
+    public int getLayoutId() {
+        return R.layout.fragment_home;
+    }
+
+    @Override
+    public HeadlineNewsViewModel getViewModel() {
+        return new HeadlineNewsViewModel();
+    }
+
+    @Override
+    protected View getLoadSirView() {
+        return viewDataBinding.tablayout;
+    }
+
+
+    @Override
+    public void onNetworkResponded(List list, boolean isDataUpdated) {
+        if (null != list && list.size() > 0 && isDataUpdated) {
+            adapter.setChannels(list);
+        }
+    }
+
+    @Override
+    protected void onViewCreated() {
         adapter = new HeadlineNewsFragmentAdapter(getChildFragmentManager());
         viewDataBinding.tablayout.setTabMode(TabLayout.MODE_SCROLLABLE);
         viewDataBinding.viewpager.setAdapter(adapter);
         viewDataBinding.tablayout.setupWithViewPager(viewDataBinding.viewpager);
         viewDataBinding.viewpager.setOffscreenPageLimit(1);
-        mHeadlineNewsViewModel = new HeadlineNewsViewModel();
-        mHeadlineNewsViewModel.dataList.observe(this, new Observer<List<NewsChannelsBean.ChannelList>>() {
-            @Override
-            public void onChanged(List<NewsChannelsBean.ChannelList> channelLists) {
-                adapter.setChannels(channelLists);
-            }
-        });
-        getLifecycle().addObserver(mHeadlineNewsViewModel);
-        return viewDataBinding.getRoot();
     }
 }

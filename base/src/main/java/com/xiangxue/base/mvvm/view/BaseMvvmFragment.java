@@ -20,11 +20,9 @@ import com.kingja.loadsir.callback.Callback;
 import com.kingja.loadsir.core.LoadService;
 import com.kingja.loadsir.core.LoadSir;
 import com.xiangxue.base.R;
-import com.xiangxue.base.loadsir.CustomCallback;
 import com.xiangxue.base.loadsir.EmptyCallback;
 import com.xiangxue.base.loadsir.ErrorCallback;
 import com.xiangxue.base.loadsir.LoadingCallback;
-import com.xiangxue.base.loadsir.TimeoutCallback;
 import com.xiangxue.base.mvvm.viewmodel.BaseMvvmViewModel;
 import com.xiangxue.base.mvvm.viewmodel.ViewStatus;
 import com.xiangxue.base.utils.ToastUtil;
@@ -58,21 +56,14 @@ public abstract class BaseMvvmFragment<VIEW extends ViewDataBinding, VIEWMODEL e
         super.onCreateView(inflater, container, savedInstanceState);
         Log.d(getFragmentTag(), "onCreateView.");
         viewDataBinding = DataBindingUtil.inflate(inflater, getLayoutId(), container, false);
-        LoadSir loadSir = new LoadSir.Builder()
-                .addCallback(new ErrorCallback())//添加各种状态页
-                .addCallback(new EmptyCallback())
-                .addCallback(new LoadingCallback())
-                .addCallback(new TimeoutCallback())
-                .addCallback(new CustomCallback())
-                .setDefaultCallback(LoadingCallback.class)//设置默认状态页
-                .build();
-        mLoadService = loadSir.register(getLoadSirView(), new Callback.OnReloadListener() {
+
+        mLoadService = LoadSir.getDefault().register(getLoadSirView(), new Callback.OnReloadListener() {
             @Override
             public void onReload(View v) {
                 viewModel.refresh();
             }
         });
-        return mLoadService.getLoadLayout();
+        return viewDataBinding.getRoot();
     }
 
     public abstract void onNetworkResponded(List<DATA> dataList, boolean isDataUpdated);
