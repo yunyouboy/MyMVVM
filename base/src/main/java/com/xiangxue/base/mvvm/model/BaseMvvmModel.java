@@ -179,4 +179,8 @@ public abstract class BaseMvvmModel<NETWORK_DATA, RESULT_DATA> implements MvvmDa
 
         compositeDisposable.add(d);
     }
+
+    public boolean isPaging(){
+        return mIsPaging;
+    }
 }
